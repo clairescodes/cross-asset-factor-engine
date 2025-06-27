@@ -46,58 +46,66 @@ class DatabaseManager:
                 )
             ''')
     
-def save_etf_data(self, etf_data_dict):
-    """Save ETF data to database"""
-    logger.info("Saving ETF data to database...")
-    
-    with sqlite3.connect(self.db_path) as conn:
-        total_rows = 0
+    def save_etf_data(self, etf_data_dict):
+        """Save ETF data to database"""
+        logger.info("Saving ETF data to database...")
         
-        for ticker, data in etf_data_dict.items():
-            # Prepare data
-            df = data.copy()
-            df['ticker'] = ticker
-            df['date'] = df.index.strftime('%Y-%m-%d')
+        with sqlite3.connect(self.db_path) as conn:
+            total_rows = 0
             
-            # yfinance uses different names
-            column_mapping = {
-                'Open': 'open_price',
-                'High': 'high_price', 
-                'Low': 'low_price',
-                'Close': 'close_price',
-                'Volume': 'volume',
-                'Adj Close': 'adj_close'  # 'Adj Close' not 'Adj_Close'
-            }
+            for ticker, data in etf_data_dict.items():
+                # Prepare data
+                df = data.copy()
+                df['ticker'] = ticker
+                df['date'] = df.index.strftime('%Y-%m-%d')
+                
+                # inside your loop, after df = data.copy()
+                # pick the right “adjusted” column
+                if 'Adj Close' in df.columns:
+                    df['adj_close'] = df['Adj Close']
+                else:
+                    logger.warning(f"'Adj Close' not in {ticker}; using 'Close' as adj_close")
+                    df['adj_close'] = df['Close']
+
+                column_mapping = {
+                    'Open':      'open_price',
+                    'High':      'high_price',
+                    'Low':       'low_price',
+                    'Close':     'close_price',
+                    'Volume':    'volume'
+                }
+                df = df.rename(columns=column_mapping)
+                # now df has open_price, high_price, …, close_price, volume, adj_close
+                
+                # Rename columns to match database schema
+                df = df.rename(columns=column_mapping)
+                
+                # Debug: Print available columns if there's an issue
+                expected_cols = ['date', 'ticker', 'open_price', 'high_price', 
+                            'low_price', 'close_price', 'volume', 'adj_close']
+                missing_cols = [col for col in expected_cols if col not in df.columns]
+                
+                if missing_cols:
+                    logger.warning(f"Missing columns for {ticker}: {missing_cols}")
+                    logger.info(f"Available columns: {list(df.columns)}")
+                    # Skip this ticker if columns are missing
+                    continue
+                
+                # Select only needed columns
+                df = df[expected_cols]
+                
+                # Save to database (replace existing data)
+                df.to_sql('etf_prices', conn, if_exists='append', index=False)
+                total_rows += len(df)
+                logger.info(f"Saved {len(df)} rows for {ticker}")
             
-            # Rename columns to match database schema
-            df = df.rename(columns=column_mapping)
-            
-            # Debug: Print available columns if there's an issue
-            expected_cols = ['date', 'ticker', 'open_price', 'high_price', 
-                           'low_price', 'close_price', 'volume', 'adj_close']
-            missing_cols = [col for col in expected_cols if col not in df.columns]
-            
-            if missing_cols:
-                logger.warning(f"Missing columns for {ticker}: {missing_cols}")
-                logger.info(f"Available columns: {list(df.columns)}")
-                # Skip this ticker if columns are missing
-                continue
-            
-            # Select only needed columns
-            df = df[expected_cols]
-            
-            # Save to database (replace existing data)
-            df.to_sql('etf_prices', conn, if_exists='append', index=False)
-            total_rows += len(df)
-            logger.info(f"Saved {len(df)} rows for {ticker}")
-        
-        logger.info(f"Total ETF data saved: {total_rows} rows")
+            logger.info(f"Total ETF data saved: {total_rows} rows")
     
     def save_economic_data(self, econ_data_dict):
         """Save economic data to database"""
         logger.info("Saving economic data to database...")
         
-        with sqlite3.connect(self, self.db_path) as conn:
+        with sqlite3.connect(self.db_path) as conn:
             total_rows = 0
             
             for indicator, data in econ_data_dict.items():
@@ -112,7 +120,7 @@ def save_etf_data(self, etf_data_dict):
                 df = df.dropna()
                 
                 # Save to database
-                df.to_sql('economic_indicators', conn, if_exists='append', index=False)
+                df.to_sql('economic_indicators', conn, if_exists='replace', index=False)
                 total_rows += len(df)
                 logger.info(f"Saved {len(df)} rows for {indicator}")
             
