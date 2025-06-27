@@ -7,11 +7,11 @@ CREATE TABLE IF NOT EXISTS etf_prices (
     low_price REAL, 
     close_price REAL, 
     volume INTEGER, 
-    adj_close REAL, 
+    adj_close REAL,  -- adjusted close. accounts for splits/dividends
     PRIMARY KEY (date, ticker)
 ); 
 
--- Economic indicators 
+-- Economic indicators. keep track of macroeconomic time series
 CREATE TABLE IF NOT EXISTS economic_indicators (
     date DATE, 
     indicator_name TEXT, 
@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS etf_factors (
 ); 
 
 -- Cross asset correlations to populate later
+-- rolling correlations between pairs of ETFs over different look-back windows.
 CREATE TABLE IF NOT EXISTS cross_asset_correlations (
     date DATE,
     ticker_1 TEXT,
