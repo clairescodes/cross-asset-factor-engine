@@ -74,7 +74,7 @@ class DatabaseManager:
                 df = df[['date', 'ticker', 'open_price', 'high_price', 
                         'low_price', 'close_price', 'volume', 'adj_close']]
                 
-                # Save to database (replace existing data)
+                # Save to database, replace existing data 
                 df.to_sql('etf_prices', conn, if_exists='append', index=False)
                 total_rows += len(df)
                 logger.info(f"Saved {len(df)} rows for {ticker}")
@@ -132,6 +132,7 @@ class DatabaseManager:
             result = pd.read_sql_query("SELECT DISTINCT ticker FROM etf_prices ORDER BY ticker", conn)
             return result['ticker'].tolist()
 
+# entry point 
 if __name__ == "__main__":
     # Test database manager
     db = DatabaseManager()
