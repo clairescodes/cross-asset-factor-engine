@@ -2,20 +2,21 @@ data_sources:
   yahoo_finance:
     rate_limit_seconds: 1.1
     max_retries: 3
+  
   fred:
     api_key: "5190d7dd7cfae3a7db39bc7d3acf67e9"
-
+    
 etfs:
   core:
-    - SPY
-    - TLT
-    - LQD
-    - HYG
-    - GLD
-
+    - SPY    # S&P 500
+    - TLT    # 20+ Year Treasury
+    - LQD    # Investment Grade Bonds
+    - HYG    # High Yield Bonds
+    - GLD    # Gold
+  
 database:
   path: "data/factor_engine.db"
-
+  
 factors:
-  momentum_periods: [63, 126, 252]
-  correlation_windows: [21, 63, 252]
+  momentum_periods: [63, 126, 252]  # 3, 6, 12 months
+  correlation_windows: [21, 63, 252]  # 1, 3, 12 months
